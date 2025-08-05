@@ -3,26 +3,27 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="/css/player.css">
+    <link rel="stylesheet" href="index.css">
     <title>Speed Quiz - Player</title>
 </head>
 <body>
-  <div class="header">
-    <h1 id="player-greeting" style="display: none;">Hi, Akjblda!</h1>
-    <h1 id="player-score" style="display: none;">Score: 5</h2>
-  </div>
-  <div class="text-entry" id="join-container">
+  <div class="text-entry">
     <input type="text" id="name-input" placeholder="Enter your name">
     <button id="join-button">JOIN</button>
   </div>
+  <div class="header">
+    <h1 id="player-greeting" style="display: block;">Hi, Akjblda!</h1>
+    <h1 id="player-score" style="display: block;">Score: 5</h2>
+  </div>
   <div class="main-content">
-    <h2 id="info-timer" style="display: none;">Get Ready!</h2>
-    <button id="buzz-button" style="display: none;">BUZZ</button>
-    <div id="answer-container" class="text-entry" style="display: none;">
+    <h2 id="info-timer" style="display: block;">Get Ready!</h2>
+    <button id="buzz-button" style="display: block;">BUZZ</button>
+    <div id="answer-container" class="text-entry">
       <input type="text" id="answer-input" placeholder="Type your answer">
       <button id="submit-answer-button">SUBMIT</button>
     </div>
   </div>
+
     <script src="/socket.io/socket.io.js"></script>
     <script src="/scripts/player.js"></script>
 </body>

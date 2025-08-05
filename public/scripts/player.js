@@ -1,8 +1,7 @@
 const socket = io();
 
 // Get DOM elements
-const joinContainer = document.querySelector('.join-container');
-const nameEntry = document.getElementById('name-entry');
+const joinContainer = document.querySelector('.text-entry'); // join form container
 const nameInput = document.getElementById('name-input');
 const joinButton = document.getElementById('join-button');
 const buzzButton = document.getElementById('buzz-button');
@@ -12,6 +11,12 @@ const answerContainer = document.getElementById('answer-container');
 const answerInput = document.getElementById('answer-input');
 const submitAnswerButton = document.getElementById('submit-answer-button');
 const playerScore = document.getElementById('player-score');
+buzzButton.addEventListener('mousedown', () => buzzButton.classList.add('active'));
+buzzButton.addEventListener('mouseup', () => buzzButton.classList.remove('active'));
+buzzButton.addEventListener('mouseleave', () => buzzButton.classList.remove('active'));
+buzzButton.addEventListener('touchstart', () => buzzButton.classList.add('active'));
+buzzButton.addEventListener('touchend', () => buzzButton.classList.remove('active'));
+buzzButton.addEventListener('touchcancel', () => buzzButton.classList.remove('active'));
 
 let countdownInterval;
 let answerTimeout;
@@ -23,10 +28,31 @@ socket.on('connect', () => {
     mySocketId = socket.id;
 });
 
+
+if (buzzButton) {
+    // Add the active class on touch start
+    buzzButton.addEventListener('touchstart', function() {
+        buzzButton.classList.add('is-active');
+    }, { passive: true }); // Use passive: true for better performance
+
+    // Remove the active class on touch end
+    buzzButton.addEventListener('touchend', function() {
+        buzzButton.classList.remove('is-active');
+    }, { passive: true });
+
+    // A fallback for desktop and other pointer devices
+    buzzButton.addEventListener('mousedown', function() {
+        buzzButton.classList.add('is-active');
+    });
+
+    buzzButton.addEventListener('mouseup', function() {
+        buzzButton.classList.remove('is-active');
+    });
+}
+
 socket.on('your-turn-to-answer', () => {
-    console.log('It is your turn to answer!');
     buzzButton.style.display = 'none';
-    answerContainer.style.display = 'block';
+    answerContainer.style.display = '';
     answerInput.value = '';
     answerInput.focus();
 
@@ -49,7 +75,6 @@ socket.on('your-turn-to-answer', () => {
 
     answerTimeout = setTimeout(() => {
         const answer = answerInput.value.trim();
-        console.log('Auto-submitting answer:', answer);
         socket.emit('submit-answer', { answer });
         answerContainer.style.display = 'none';
         clearInterval(countdownInterval);
@@ -77,12 +102,10 @@ joinButton.addEventListener('click', () => {
 
 // Listen for score updates and update your score
 socket.on('update-scores', (scores, players) => {
-    // Try to find your score by socket ID first, then by name if needed
     let score = 0;
     if (mySocketId && scores[mySocketId] !== undefined) {
         score = scores[mySocketId];
     } else if (myName) {
-        // Fallback: find by name (in case of reconnect)
         for (const id in players) {
             if (players[id].name === myName && scores[id] !== undefined) {
                 score = scores[id];
@@ -97,7 +120,6 @@ socket.on('update-scores', (scores, players) => {
 submitAnswerButton.addEventListener('click', () => {
     const answer = answerInput.value.trim();
     if (answer) {
-        console.log(`Submitting answer: ${answer}`);
         socket.emit('submit-answer', { answer });
         answerInput.value = '';
         answerContainer.style.display = 'none';
@@ -105,41 +127,28 @@ submitAnswerButton.addEventListener('click', () => {
         clearInterval(countdownInterval);
         infoTimer.textContent = 'Waiting...';
         infoTimer.style.display = 'block';
-    } else {
-        console.log('Answer input is empty. Please type your answer.');
     }
 });
 
 buzzButton.addEventListener('click', () => {
-    console.log('BUZZ! Sending buzz to server.');
     socket.emit('buzz');
-    // Stop the countdown and hide it once the player has buzzed
     clearInterval(countdownInterval);
     infoTimer.style.display = 'none';
-    buzzButton.disabled = true; // Prevent multiple buzzes
+    buzzButton.disabled = true;
 });
 
 socket.on('arm-buzzers', () => {
-    console.log('Host armed the buzzers! You can buzz in now.');
     buzzButton.disabled = false;
-
-    // Clear "Get Ready" text before starting countdown
     infoTimer.textContent = '';
-
-    // --- Start Countdown ---
     let timeLeft = 5;
     infoTimer.textContent = timeLeft;
     infoTimer.style.display = 'block';
-
-    // Clear any previous interval to be safe
     clearInterval(countdownInterval);
-
     countdownInterval = setInterval(() => {
         timeLeft--;
         if (timeLeft > 0) {
             infoTimer.textContent = timeLeft;
         } else {
-            // When the timer hits 0, show a message
             infoTimer.textContent = "Time's Up!";
             clearInterval(countdownInterval);
         }
@@ -147,14 +156,12 @@ socket.on('arm-buzzers', () => {
 });
 
 socket.on('disarm-buzzers', () => {
-    console.log('Time is up! Buzzers are now inactive.');
     buzzButton.disabled = true;
 });
 
 socket.on('get-ready', () => {
-    console.log('Host initiated "Get Ready" state. Waiting for question.');
     buzzButton.disabled = true;
-    buzzButton.style.display = 'flex'; // Ensure buzzer is visible
+    buzzButton.style.display = 'flex';
     clearInterval(countdownInterval);
     infoTimer.textContent = 'Get Ready...';
     infoTimer.style.display = 'block';

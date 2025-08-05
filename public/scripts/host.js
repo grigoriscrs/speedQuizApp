@@ -27,11 +27,6 @@ socket.on('update-player-list', (players) => {
     }
 });
 
-// getReadyButton.addEventListener('click', () => {
-//     console.log('Host: Sending "get-ready" to server.');
-//     socket.emit('get-ready');
-// });
-
 nextQuestionButton.addEventListener('click', () => {
     console.log('Host: Sending "start-question" to server.');
     socket.emit('start-question');
