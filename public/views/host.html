@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/css/style.css">
+    <title>Speed Quiz - Host</title>
+</head>
+<body>
+    <div class="container">
+        <h1>Host/Quizmaster View</h1>
+        <h2 id="status-message">Ready for next question.</h2>
+        <hr>
+        <h2>Connected Players:</h2>
+        <ul id="players-list"></ul>
+        <h2>Buzz Order:</h2>
+        <ol id="buzz-order"></ol>
+        <button id="next-question-button">Start Next Question</button>
+        <button id="reset-button">Reset Buzzers</button>
+        <button id="get-ready-button">Get Ready</button>
+    </div>
+    
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="/scripts/host.js"></script>
+</body>
+</html>
