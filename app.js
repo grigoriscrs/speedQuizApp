@@ -10,9 +10,28 @@ const io = new Server(server);
 const port = 3000;
 
 // In-memory state
-const players = {}; // Store players { socketId: { name: 'PlayerName' } }
+const players = {}; // { socketId: { name: 'PlayerName' } }
+let scores = {};    // { socketId: points }
+let nameScores = {}; // { playerName: score }
 let buzzerActive = false;
-let buzzQueue = []; // An ordered list of players who buzzed [{ id, name }]
+let buzzQueue = [];
+let currentAnsweringIndex = -1;
+let questionValue = 1; // Points for current question
+
+// Helper: send next player in buzzQueue their turn
+function sendNextToAnswer() {
+  if (buzzQueue.length > 0 && currentAnsweringIndex < buzzQueue.length) {
+    const player = buzzQueue[currentAnsweringIndex];
+    io.to(player.id).emit('your-turn-to-answer');
+    io.emit('host-status', `${player.name}'s turn to answer.`);
+  } else {
+    io.emit('get-ready');
+    currentAnsweringIndex = -1;
+    buzzQueue = [];
+    questionValue = 1;
+    io.emit('update-buzz-queue', buzzQueue);
+  }
+}
 
 // Serve static files from the 'public' directory
 app.use(express.static(path.join(__dirname, 'public')));
@@ -36,12 +55,25 @@ io.on('connection', (socket) => {
 
   // When a player joins with a name
   socket.on('player-join', (data) => {
-    players[socket.id] = {
-      name: data.name
-    };
-    console.log(`Player ${data.name} joined with ID ${socket.id}`);
-    // Broadcast the updated player list to everyone
+    // Restore score by name if exists
+    let previousScore = nameScores[data.name] || 0;
+
+    // Remove any previous player with this name (cleanup)
+    for (const id in players) {
+      if (players[id].name === data.name) {
+        delete players[id];
+        delete scores[id];
+        break;
+      }
+    }
+
+    players[socket.id] = { name: data.name };
+    scores[socket.id] = previousScore;
+    nameScores[data.name] = previousScore; // Ensure mapping is up to date
+
+    console.log(`Player ${data.name} joined with ID ${socket.id} (restored score: ${previousScore})`);
     io.emit('update-player-list', players);
+    io.emit('update-scores', scores, players);
   });
 
   // When host starts the next question
@@ -53,8 +85,9 @@ io.on('connection', (socket) => {
     console.log('Host started a new question. Arming buzzers for 5 seconds.');
     buzzerActive = true;
     buzzQueue = [];
+    currentAnsweringIndex = -1;
+    questionValue = 1;
     io.emit('arm-buzzers');
-    // Also notify host to clear its display
     io.emit('update-buzz-queue', buzzQueue);
 
     setTimeout(() => {
@@ -62,6 +95,11 @@ io.on('connection', (socket) => {
       buzzerActive = false;
       // Let clients know the buzzing window has closed
       io.emit('disarm-buzzers');
+      // After buzzing is over, start answer phase if anyone buzzed
+      if (buzzQueue.length > 0) {
+        currentAnsweringIndex = 0;
+        sendNextToAnswer();
+      }
     }, 5000);
   });
 
@@ -75,21 +113,70 @@ io.on('connection', (socket) => {
     }
   });
 
+  // When a player submits an answer
+  socket.on('submit-answer', ({ answer }) => {
+    // Forward answer to host for review
+    if (currentAnsweringIndex >= 0 && buzzQueue[currentAnsweringIndex]) {
+      const player = buzzQueue[currentAnsweringIndex];
+      io.emit('player-answer', { playerId: player.id, playerName: player.name, answer });
+    }
+  });
+
+  // Host accepts answer
+  socket.on('host-accept', () => {
+    if (currentAnsweringIndex >= 0 && buzzQueue[currentAnsweringIndex]) {
+      const player = buzzQueue[currentAnsweringIndex];
+      scores[player.id] = (scores[player.id] || 0) + questionValue;
+      nameScores[player.name] = scores[player.id]; // <-- update persistent score
+      console.log(`Player ${player.name} (${player.id}) awarded ${questionValue} point(s). Total: ${scores[player.id]}`);
+      io.emit('log-points', { playerName: player.name, points: questionValue, total: scores[player.id] });
+      io.emit('update-scores', scores, players);
+    }
+    io.emit('get-ready');
+    currentAnsweringIndex = -1;
+    buzzQueue = [];
+    questionValue = 1;
+    io.emit('update-buzz-queue', buzzQueue);
+  });
+
+  // Host rejects answer
+  socket.on('host-reject', () => {
+    questionValue += 1;
+    currentAnsweringIndex++;
+    if (currentAnsweringIndex < buzzQueue.length) {
+      sendNextToAnswer();
+    } else {
+      io.emit('get-ready');
+      currentAnsweringIndex = -1;
+      buzzQueue = [];
+      questionValue = 1;
+      io.emit('update-buzz-queue', buzzQueue);
+    }
+  });
+
   // When host resets the buzzers
   socket.on('reset-buzzers', () => {
     console.log('Host initiated "Get Ready" state.');
     buzzerActive = false;
     buzzQueue = [];
+    questionValue = 1;
     io.emit('get-ready'); // Signal all clients to enter the ready state
+    io.emit('reset-buzzers');
     io.emit('update-buzz-queue', buzzQueue);
   });
 
+  // When a player disconnects
   socket.on('disconnect', () => {
-    console.log(`User disconnected: ${socket.id}`);
     if (players[socket.id]) {
+      // Save score by name before deleting
+      const name = players[socket.id].name;
+      if (scores[socket.id] !== undefined) {
+        nameScores[name] = scores[socket.id];
+      }
       delete players[socket.id];
+      delete scores[socket.id];
       io.emit('update-player-list', players);
-      // Also remove from buzz queue if they were in it
+      io.emit('update-scores', scores, players);
       buzzQueue = buzzQueue.filter(p => p.id !== socket.id);
       io.emit('update-buzz-queue', buzzQueue);
     }

@@ -7,25 +7,18 @@
     <title>Speed Quiz - Player</title>
 </head>
 <body>
-    <div class="join-container">
+    <div class="container">
         <div id="name-entry">
             <h1>Join Game</h1>
             <input type="text" id="name-input" placeholder="Enter your name">
             <button id="join-button">JOIN</button>
         </div>
     </div>
-    <div class="header">
-      <h1 id="player-greeting" style="display: none;"></h1>
-      <h1 id="player-score" style="display: none;"></h2>
-    </div>
-    <div class="main-content">
-      <h2 id="info-timer" style="display: none;"></h2>
-      <button id="buzz-button" style="display: none;">BUZZ</button>
-      <div id="answer-container" style="display: none;">
-        <input type="text" id="answer-input" placeholder="Type your answer here">
-        <button id="submit-answer-button">SUBMIT</button>
-      </div>
-    </div>
+
+    <!-- These elements are now outside the container for independent positioning -->
+    <h1 id="player-greeting" style="display: none;"></h1>
+    <h2 id="info-timer" style="display: none;"></h2>
+    <button id="buzz-button" style="display: none;">BUZZ</button>
 
     <script src="/socket.io/socket.io.js"></script>
     <script src="/scripts/player.js"></script>

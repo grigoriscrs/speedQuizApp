@@ -7,6 +7,13 @@ const statusMessage = document.getElementById('status-message');
 const getReadyButton = document.getElementById('get-ready-button');
 const nextQuestionButton = document.getElementById('next-question-button');
 const resetButton = document.getElementById('reset-button');
+const scoresList = document.getElementById('scores-list');
+
+const answerReview = document.getElementById('answer-review');
+const answerText = document.getElementById('answer-text');
+const acceptAnswer = document.getElementById('accept-answer');
+const rejectAnswer = document.getElementById('reject-answer');
+let reviewingPlayerId = null;
 
 console.log('Host script loaded. Ready to manage the quiz!');
 
@@ -20,11 +27,10 @@ socket.on('update-player-list', (players) => {
     }
 });
 
-getReadyButton.addEventListener('click', () => {
-    console.log('Host: Sending "get-ready" to server.');
-    socket.emit('get-ready');
-});
-
+// getReadyButton.addEventListener('click', () => {
+//     console.log('Host: Sending "get-ready" to server.');
+//     socket.emit('get-ready');
+// });
 
 nextQuestionButton.addEventListener('click', () => {
     console.log('Host: Sending "start-question" to server.');
@@ -68,4 +74,37 @@ socket.on('disarm-buzzers', () => {
         statusMessage.textContent = 'Time is up! No one buzzed in.';
         statusMessage.style.color = 'orange';
     }
+});
+
+socket.on('player-answer', ({ playerId, playerName, answer }) => {
+    answerReview.style.display = 'block';
+    answerText.textContent = `${playerName}: ${answer || '[No answer submitted]'}`;
+    reviewingPlayerId = playerId;
+});
+
+acceptAnswer.addEventListener('click', () => {
+    answerReview.style.display = 'none';
+    socket.emit('host-accept', { playerId: reviewingPlayerId });
+    reviewingPlayerId = null;
+});
+
+rejectAnswer.addEventListener('click', () => {
+    answerReview.style.display = 'none';
+    socket.emit('host-reject', { playerId: reviewingPlayerId });
+    reviewingPlayerId = null;
+});
+
+// Listen for score updates and render them
+socket.on('update-scores', (scores, players) => {
+    scoresList.innerHTML = '';
+    for (const id in players) {
+        const li = document.createElement('li');
+        li.textContent = `${players[id].name}: ${scores[id] || 0}`;
+        scoresList.appendChild(li);
+    }
+});
+
+// Log when a player gets points
+socket.on('log-points', ({ playerName, points, total }) => {
+    console.log(`Player ${playerName} awarded ${points} point(s). Total: ${total}`);
 });

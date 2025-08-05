@@ -1,26 +1,33 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="/css/style.css">
-    <title>Speed Quiz - Host</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="/css/style.css">
+  <title>Speed Quiz - Host</title>
 </head>
 <body>
-    <div class="container">
-        <h1>Host/Quizmaster View</h1>
-        <h2 id="status-message">Ready for next question.</h2>
-        <hr>
-        <h2>Connected Players:</h2>
-        <ul id="players-list"></ul>
-        <h2>Buzz Order:</h2>
-        <ol id="buzz-order"></ol>
-        <button id="next-question-button">Start Next Question</button>
-        <button id="reset-button">Reset Buzzers</button>
-        <button id="get-ready-button">Get Ready</button>
+  <div class="container">
+    <h1>Host/Quizmaster View</h1>
+    <h2 id="status-message">Ready for next question.</h2>
+    <hr>
+    <h2>Connected Players:</h2>
+    <ul id="players-list"></ul>
+    <h2>Buzz Order:</h2>
+    <ol id="buzz-order"></ol>
+    <h2>Scores:</h2>
+    <ul id="scores-list"></ul>
+    <!-- Add to public/views/host.html, inside <body> -->
+    <div id="answer-review" style="display:none;">
+      <span id="answer-text"></span>
+      <button id="accept-answer">Accept</button>
+      <button id="reject-answer">Reject</button>
     </div>
-    
-    <script src="/socket.io/socket.io.js"></script>
-    <script src="/scripts/host.js"></script>
+    <button id="next-question-button">Start Next Question</button>
+    <button id="reset-button">Reset Buzzers</button>
+  </div>
+  
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/scripts/host.js"></script>
 </body>
 </html>
